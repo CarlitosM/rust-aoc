@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.103"
+reqwest = { version = "0.13.4", features = ["blocking", "rustls", "form"] }
