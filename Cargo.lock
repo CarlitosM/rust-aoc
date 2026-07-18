@@ -65,12 +65,16 @@ version = "0.1.0"
 [[package]]
 name = "aoc-core"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+]
 
 [[package]]
 name = "aoc-fetch"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aoc-core",
  "clap",
  "reqwest",
 ]

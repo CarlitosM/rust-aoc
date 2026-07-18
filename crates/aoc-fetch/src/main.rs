@@ -36,7 +36,7 @@ fn main() -> Result<()> {
     }
 
     // 2. Resolve session cookie
-    let session_cookie = resolve_session(args.session)?;
+    let session_cookie = aoc_core::resolve_session(args.session)?;
 
     // 3. Fetch the input
     println!("Fetching input for Year {}, Day {}...", args.year, args.day);
@@ -47,37 +47,6 @@ fn main() -> Result<()> {
 
     println!("Success! Input saved.");
     Ok(())
-}
-
-fn resolve_session(cli_session: Option<String>) -> Result<String> {
-    if let Some(cookie) = cli_session {
-        let trimmed = cookie.trim().to_string();
-        if !trimmed.is_empty() {
-            return Ok(trimmed);
-        }
-    }
-
-    if let Ok(cookie) = std::env::var("AOC_SESSION") {
-        let trimmed = cookie.trim().to_string();
-        if !trimmed.is_empty() {
-            return Ok(trimmed);
-        }
-    }
-
-    if let Ok(content) = fs::read_to_string(".session") {
-        let trimmed = content.trim().to_string();
-        if !trimmed.is_empty() {
-            return Ok(trimmed);
-        }
-    }
-
-    Err(anyhow!(
-        "No Advent of Code session cookie found.\n\
-        Please provide it using one of the following methods:\n\
-        1. Pass the `--session` (or `-s`) flag.\n\
-        2. Set the `AOC_SESSION` environment variable.\n\
-        3. Create a `.session` file in the workspace root containing your cookie."
-    ))
 }
 
 fn fetch_input(year: u32, day: u32, session_cookie: &str) -> Result<String> {
