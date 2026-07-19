@@ -1,3 +1,6 @@
+pub mod runner;
+pub use runner::AoCYear;
+
 use anyhow::{anyhow, Context, Result};
 use std::fs;
 
