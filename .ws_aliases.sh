@@ -35,3 +35,53 @@ gitB() {
   git checkout -b "$1"
   git push --set-upstream origin "$1"
 }
+
+# Run tests for a aoc year and (optional) day and optional (part)
+#   Usage: aocTest <year> [day] [part]
+#   Example: aocTest 2023 05 2
+aocTest() {
+  if [ -z "$1" ]; then
+    echo "Usage: aocTest <year> [day] [part]" >&2
+    return 1
+  fi
+
+  local year="$1"
+  local day="${2:-}"
+  local part="${3:-}"
+
+  if [ -n "$day" ] && [ -n "$part" ]; then
+    cargo test -p "aoc-${year}" "day${day}::tests_part${part}"
+  elif [ -n "$day" ]; then
+    cargo test -p "aoc-${year}" "day${day}"
+  else
+    cargo test -p "aoc-${year}"
+  fi
+}
+
+# Run a solution for a given year, day and part
+# and optionally submit the result to AOC
+#   Usage: aocRun <year> <day> <part> [--submit]
+#   Example: aocRun 2023 05 2 --submit
+aocRun() {
+  if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+    echo "Usage: aocRun <year> <day> <part> [--submit]" >&2
+    return 1
+  fi
+
+  local year="$1"
+  local day="$2"
+  local part="$3"
+  local submit="${4:-}"
+
+  if [ -n "$submit" ] && [ "$submit" != "--submit" ]; then
+    echo "Invalid submit value: $submit" >&2
+    echo "Usage: aocRun <year> <day> <part> [--submit]" >&2
+    return 1
+  fi
+
+  if [ "$submit" = "--submit" ]; then
+    cargo run -p "aoc-${year}" --bin run -- "$day" "$part" --submit
+  else
+    cargo run -p "aoc-${year}" --bin run -- "$day" "$part"
+  fi
+}
