@@ -85,3 +85,30 @@ aocRun() {
     cargo run -p "aoc-${year}" --bin run -- "$day" "$part"
   fi
 }
+
+# Scaffold a new AOC year or day for a given year
+#   Usage: aocNew <year> [day]
+#   Example: aocNew 2023 05
+aocNew() {
+  if [ -z "$1" ]; then
+    echo "Usage: aocNew <year> [day] [-l]" >&2
+    return 1
+  fi
+
+  local year="$1"
+  local day="${2:-}"
+
+  if [ -n "$day" ]; then
+    cargo run -p "aoc-scaffold" -- --year "$year" --day "$day"
+  else
+    cargo run -p "aoc-scaffold" -- --year "$year"
+  fi
+
+  if [ "$3" = "-l" ]; then
+    if [ -n "$day" ]; then
+      aocGI "$year" "$day"
+    else
+      aocGI "$year" 1
+    fi
+  fi
+}
