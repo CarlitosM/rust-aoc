@@ -16,6 +16,7 @@ enum Dir {
     Down,
 }
 
+/// Converts a puzzle input character into a floor movement direction.
 fn floor_to_dir(c: char) -> Result<Dir> {
     match c {
         '(' => Ok(Dir::Up),
@@ -24,6 +25,7 @@ fn floor_to_dir(c: char) -> Result<Dir> {
     }
 }
 
+/// Parses each floor direction and returns Santa's final floor.
 fn parse_and_calc_floor(input: &str) -> Result<i32> {
     input.chars().try_fold(0, |acc, c| {
         let dir = floor_to_dir(c)?;
@@ -36,6 +38,7 @@ fn parse_and_calc_floor(input: &str) -> Result<i32> {
 
 const BASEMENT: i32 = -1;
 
+/// Finds the one-based position where Santa first enters the basement.
 fn parse_find_basement_pos(input: &str) -> Result<usize> {
     let mut floor = 0;
 

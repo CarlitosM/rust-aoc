@@ -12,6 +12,8 @@ impl AoCYear for Year2015 {
         match (day, part) {
             (1, 1) => days::day01::part1(input),
             (1, 2) => days::day01::part2(input),
+            (2, 1) => days::day02::part1(input),
+            (2, 2) => days::day02::part2(input),
             _ => Err(anyhow!("Day {day} part {part} is not yet implemented")),
         }
     }
