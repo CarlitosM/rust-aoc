@@ -16,6 +16,8 @@ impl AoCYear for Year2015 {
             (2, 2) => days::day02::part2(input),
             (3, 1) => days::day03::part1(input),
             (3, 2) => days::day03::part2(input),
+            (4, 1) => days::day04::part1(input),
+            (4, 2) => days::day04::part2(input),
             _ => Err(anyhow!("Day {day} part {part} is not yet implemented")),
         }
     }
