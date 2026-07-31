@@ -3,7 +3,7 @@
 //! The tool creates a new `aoc-{year}` crate when needed, adds the standard
 //! runner wiring, and appends day modules under that year's `src/days` tree.
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 
 use std::fs;
@@ -28,7 +28,7 @@ struct Cli {
     #[arg(
         short,
         long,
-        value_parser = clap::value_parser!(u32).range(2..=25)
+        value_parser = clap::value_parser!(u32).range(1..=25)
     )]
     day: Option<u32>,
 }
@@ -116,6 +116,68 @@ mod tests_part2 {
     fn append_mod(day: u32) -> String {
         format!("pub mod day{day:02};\n")
     }
+
+    /// Builds the Criterion benchmark harness for a generated year crate.
+    fn bench(year: u32, days: &[u32]) -> String {
+        let input_bindings = days
+            .iter()
+            .map(|day| format!("    let day{day:02} = load_input({year}, {day});"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let benchmark_calls = days
+            .iter()
+            .flat_map(|day| {
+                [
+                    format!("    bench_part(c, {day}, 1, &day{day:02});"),
+                    format!("    bench_part(c, {day}, 2, &day{day:02});"),
+                ]
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        format!(
+            r#"use aoc_core::AoCYear;
+use aoc_{year}::Year{year};
+use criterion::{{Criterion, criterion_group, criterion_main}};
+use std::fs;
+use std::hint::black_box;
+use std::path::PathBuf;
+
+fn load_input(year: u32, day: u32) -> String {{
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../inputs")
+        .join(year.to_string())
+        .join(format!("day{{day:02}}.txt"));
+
+    fs::read_to_string(&path).unwrap_or_else(|error| {{
+        panic!(
+            "Unable to load benchmark input for year {{year}}, day {{day:02}} at {{}}: {{error}}",
+            path.display()
+        )
+    }})
+}}
+
+fn bench_part(c: &mut Criterion, day: u32, part: u32, input: &str) {{
+    c.bench_function(&format!("day{{day:02}}/part{{part}}"), |b| {{
+        b.iter(|| {{
+            let answer = Year{year}::solve(day, part, black_box(input)).unwrap_or_else(|error| {{
+                panic!("Year {year} day {{day:02}} part {{part}} failed: {{error}}")
+            }});
+            black_box(answer);
+        }});
+    }});
+}}
+
+fn benchmark_days(c: &mut Criterion) {{
+{input_bindings}
+{benchmark_calls}
+}}
+
+criterion_group!(benches, benchmark_days);
+criterion_main!(benches);
+"#
+        )
+    }
 }
 
 /// Filesystem paths used while scaffolding a generated year crate.
@@ -128,6 +190,8 @@ struct ScaffoldDirs {
     src: PathBuf,
     /// Binary directory containing the generated runner.
     bin: PathBuf,
+    /// Directory containing generated Criterion benchmark harnesses.
+    benches: PathBuf,
 }
 
 impl ScaffoldDirs {
@@ -137,12 +201,14 @@ impl ScaffoldDirs {
         let src = year.join("src");
         let days = src.join("days");
         let bin = src.join("bin");
+        let benches = year.join("benches");
 
         Ok(Self {
             year,
             days,
             src,
             bin,
+            benches,
         })
     }
 
@@ -219,12 +285,31 @@ fn scaffold_year(aoc_dirs: &ScaffoldDirs, year: u32) -> Result<()> {
         &format!("add aoc-core dependency to {crate_name}"),
     )?;
 
+    run_cargo(
+        Command::new("cargo")
+            .arg("add")
+            .arg("criterion")
+            .arg("--dev")
+            .arg("--features")
+            .arg("html_reports")
+            .current_dir(&aoc_dirs.year),
+        &format!("add Criterion dev-dependency to {crate_name}"),
+    )?;
+
+    configure_bench_cargo(aoc_dirs)?;
+
     fs::create_dir_all(&aoc_dirs.bin)
         .with_context(|| format!("Failed to create bin directory: {}", aoc_dirs.bin.display()))?;
     fs::create_dir_all(&aoc_dirs.days).with_context(|| {
         format!(
             "Failed to create days directory: {}",
             aoc_dirs.days.display()
+        )
+    })?;
+    fs::create_dir_all(&aoc_dirs.benches).with_context(|| {
+        format!(
+            "Failed to create benchmark directory: {}",
+            aoc_dirs.benches.display()
         )
     })?;
 
@@ -235,6 +320,36 @@ fn scaffold_year(aoc_dirs: &ScaffoldDirs, year: u32) -> Result<()> {
     let lib_path = aoc_dirs.src.join("lib.rs");
     fs::write(&lib_path, Templates::lib(year))
         .with_context(|| format!("Failed to write lib template to {}", lib_path.display()))?;
+
+    let bench_path = aoc_dirs.benches.join("days.rs");
+    fs::write(&bench_path, Templates::bench(year, &[1])).with_context(|| {
+        format!(
+            "Failed to write benchmark template to {}",
+            bench_path.display()
+        )
+    })?;
+
+    Ok(())
+}
+
+/// Adds the Cargo configuration required for a Criterion benchmark target.
+fn configure_bench_cargo(aoc_dirs: &ScaffoldDirs) -> Result<()> {
+    let cargo_path = aoc_dirs.year.join("Cargo.toml");
+    let mut cargo_toml = fs::read_to_string(&cargo_path)
+        .with_context(|| format!("Failed to read {}", cargo_path.display()))?;
+
+    if !cargo_toml.contains("[[bench]]\nname = \"days\"") {
+        cargo_toml.push_str(
+            r#"
+
+[[bench]]
+name = "days"
+harness = false
+"#,
+        );
+        fs::write(&cargo_path, cargo_toml)
+            .with_context(|| format!("Failed to update {}", cargo_path.display()))?;
+    }
 
     Ok(())
 }
@@ -272,6 +387,44 @@ fn scaffold_day(aoc_dirs: &ScaffoldDirs, day: u32) -> Result<()> {
             .with_context(|| format!("Failed to append to {}", mod_file_path.display()))?;
     }
 
+    scaffold_bench(aoc_dirs, day)
+}
+
+/// Rebuilds the explicit benchmark registrations from the exported day modules.
+fn scaffold_bench(aoc_dirs: &ScaffoldDirs, _day: u32) -> Result<()> {
+    let mod_file_path = aoc_dirs.days.join("mod.rs");
+    let mod_content = fs::read_to_string(&mod_file_path)
+        .with_context(|| format!("Failed to read {}", mod_file_path.display()))?;
+    let mut days = mod_content
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("pub mod day"))
+        .filter_map(|day| day.trim_end_matches(';').parse::<u32>().ok())
+        .collect::<Vec<_>>();
+    days.sort_unstable();
+    days.dedup();
+
+    fs::create_dir_all(&aoc_dirs.benches).with_context(|| {
+        format!(
+            "Failed to create benchmark directory: {}",
+            aoc_dirs.benches.display()
+        )
+    })?;
+
+    let year = aoc_dirs
+        .year
+        .file_name()
+        .and_then(|name| name.to_str())
+        .and_then(|name| name.strip_prefix("aoc-"))
+        .and_then(|year| year.parse::<u32>().ok())
+        .with_context(|| format!("Could not determine year from {}", aoc_dirs.year.display()))?;
+    let bench_path = aoc_dirs.benches.join("days.rs");
+    fs::write(&bench_path, Templates::bench(year, &days)).with_context(|| {
+        format!(
+            "Failed to write benchmark template to {}",
+            bench_path.display()
+        )
+    })?;
+
     Ok(())
 }
 
@@ -286,4 +439,22 @@ fn run_cargo(command: &mut Command, description: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Templates;
+
+    #[test]
+    fn benchmark_template_registers_each_day_and_part() {
+        let template = Templates::bench(2099, &[1, 4]);
+
+        assert!(template.contains("let day01 = load_input(2099, 1);"));
+        assert!(template.contains("let day04 = load_input(2099, 4);"));
+        assert!(template.contains("bench_part(c, 1, 1, &day01);"));
+        assert!(template.contains("bench_part(c, 1, 2, &day01);"));
+        assert!(template.contains("bench_part(c, 4, 1, &day04);"));
+        assert!(template.contains("bench_part(c, 4, 2, &day04);"));
+        assert!(template.contains("day{day:02}/part{part}"));
+    }
 }
