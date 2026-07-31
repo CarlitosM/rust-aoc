@@ -7,3 +7,10 @@ edition = "2024"
 aoc-core = { path = "../aoc-core" }
 anyhow = "1.0.103"
 md5 = "0.8.1"
+
+[dev-dependencies]
+criterion = { version = "0.8", features = ["html_reports"] }
+
+[[bench]]
+name = "days"
+harness = false

@@ -58,6 +58,76 @@ aocTest() {
   fi
 }
 
+# Run Criterion benchmarks for an AOC year, optionally filtered by day and part.
+#   Usage: aocBench <year> [day] [part]
+#   Examples: aocBench 2023; aocBench 2023 05; aocBench 2023 05 2
+aocBench() {
+  if [ "$#" -lt 1 ] || [ "$#" -gt 3 ]; then
+    echo "Usage: aocBench <year> [day] [part]" >&2
+    return 1
+  fi
+
+  local year="$1"
+  local day="${2:-}"
+  local part="${3:-}"
+
+  if ! [[ "$year" =~ ^[0-9]+$ ]]; then
+    echo "Invalid year: $year" >&2
+    return 1
+  fi
+
+  if [ -n "$day" ]; then
+    if ! [[ "$day" =~ ^[0-9]+$ ]] || [ "$day" -lt 1 ] || [ "$day" -gt 25 ]; then
+      echo "Day must be between 1 and 25. Got: $day" >&2
+      return 1
+    fi
+    printf -v day "%02d" "$day"
+  fi
+
+  if [ -n "$part" ] && { ! [[ "$part" =~ ^[0-9]+$ ]] || [ "$part" -lt 1 ] || [ "$part" -gt 2 ]; }; then
+    echo "Part must be 1 or 2. Got: $part" >&2
+    return 1
+  fi
+
+  if [ -z "$day" ]; then
+    cargo bench -p "aoc-${year}" --bench days
+  elif [ -z "$part" ]; then
+    cargo bench -p "aoc-${year}" --bench days -- "day${day}"
+  else
+    cargo bench -p "aoc-${year}" --bench days -- "day${day}/part${part}"
+  fi
+}
+
+# Profile one Criterion benchmark with samply.
+#   Usage: aocProfile <year> <day> <part>
+#   Example: aocProfile 2023 05 2
+aocProfile() {
+  if [ "$#" -ne 3 ]; then
+    echo "Usage: aocProfile <year> <day> <part>" >&2
+    return 1
+  fi
+
+  local year="$1"
+  local day="$2"
+  local part="$3"
+
+  if ! [[ "$year" =~ ^[0-9]+$ ]]; then
+    echo "Invalid year: $year" >&2
+    return 1
+  fi
+  if ! [[ "$day" =~ ^[0-9]+$ ]] || [ "$day" -lt 1 ] || [ "$day" -gt 25 ]; then
+    echo "Day must be between 1 and 25. Got: $day" >&2
+    return 1
+  fi
+  if ! [[ "$part" =~ ^[0-9]+$ ]] || [ "$part" -lt 1 ] || [ "$part" -gt 2 ]; then
+    echo "Part must be 1 or 2. Got: $part" >&2
+    return 1
+  fi
+
+  printf -v day "%02d" "$day"
+  samply record cargo bench -p "aoc-${year}" --bench days -- "day${day}/part${part}"
+}
+
 # Run a solution for a given year, day and part
 # and optionally submit the result to AOC
 #   Usage: aocRun <year> <day> <part> [--submit]
