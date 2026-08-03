@@ -90,6 +90,7 @@ dependencies = [
  "aoc-core",
  "criterion",
  "md5",
+ "rayon",
 ]
 
 [[package]]
