@@ -32,20 +32,20 @@ fn bench_part(c: &mut Criterion, day: u32, part: u32, input: &str) {
 
 fn benchmark_days(c: &mut Criterion) {
     let day01 = load_input(2015, 1);
+    let day02 = load_input(2015, 2);
+    let day03 = load_input(2015, 3);
+    let day04 = load_input(2015, 4);
+    let day05 = load_input(2015, 5);
     bench_part(c, 1, 1, &day01);
     bench_part(c, 1, 2, &day01);
-
-    let day02 = load_input(2015, 2);
     bench_part(c, 2, 1, &day02);
     bench_part(c, 2, 2, &day02);
-
-    let day03 = load_input(2015, 3);
     bench_part(c, 3, 1, &day03);
     bench_part(c, 3, 2, &day03);
-
-    let day04 = load_input(2015, 4);
     bench_part(c, 4, 1, &day04);
     bench_part(c, 4, 2, &day04);
+    bench_part(c, 5, 1, &day05);
+    bench_part(c, 5, 2, &day05);
 }
 
 criterion_group!(benches, benchmark_days);
