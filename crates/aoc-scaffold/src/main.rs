@@ -3,7 +3,7 @@
 //! The tool creates a new `aoc-{year}` crate when needed, adds the standard
 //! runner wiring, and appends day modules under that year's `src/days` tree.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::Parser;
 
 use std::fs;
@@ -77,11 +77,13 @@ impl AoCYear for Year{year} {{
     fn day() -> String {
         r#"use anyhow::Result;
 
+#[allow(clippy::unnecessary_wraps)]
 pub fn part1(input: &str) -> Result<String> {
     let _ = input;
     Ok("TODO".to_string())
 }
 
+#[allow(clippy::unnecessary_wraps)]
 pub fn part2(input: &str) -> Result<String> {
     let _ = input;
     Ok("TODO".to_string())
@@ -92,9 +94,8 @@ mod tests_part1 {
     use super::*;
 
     #[test]
-    fn placeholder_part1() -> Result<()> {
-        assert_eq!(part1("TODO")?, "TODO");
-        Ok(())
+    fn test_aoc_test_inputs() {
+        assert!(false);
     }
 }
 
@@ -103,9 +104,8 @@ mod tests_part2 {
     use super::*;
 
     #[test]
-    fn placeholder_part2() -> Result<()> {
-        assert_eq!(part2("TODO")?, "TODO");
-        Ok(())
+    fn test_aoc_test_inputs() {
+        assert!(false);
     }
 }
 "#
