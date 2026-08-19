@@ -32,7 +32,7 @@ gitB() {
     echo "Usage: gitB <branch>" >&2
     return 1
   fi
-  git checkout -b "$1"
+  git switch -c "$1"
   git push --set-upstream origin "$1"
 }
 
@@ -217,8 +217,8 @@ aocRun() {
 }
 
 # Scaffold a new AOC year or day for a given year
-#   Usage: aocNew <year> [day]
-#   Example: aocNew 2023 05
+#   Usage: aocNew <year> [day] [-l]
+#   Example: aocNew 2023 05 -l
 aocNew() {
   if [ -z "$1" ]; then
     echo "Usage: aocNew <year> [day] [-l]" >&2
