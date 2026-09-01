@@ -36,6 +36,7 @@ fn benchmark_days(c: &mut Criterion) {
     let day03 = load_input(2015, 3);
     let day04 = load_input(2015, 4);
     let day05 = load_input(2015, 5);
+    let day06 = load_input(2015, 6);
     bench_part(c, 1, 1, &day01);
     bench_part(c, 1, 2, &day01);
     bench_part(c, 2, 1, &day02);
@@ -46,6 +47,8 @@ fn benchmark_days(c: &mut Criterion) {
     bench_part(c, 4, 2, &day04);
     bench_part(c, 5, 1, &day05);
     bench_part(c, 5, 2, &day05);
+    bench_part(c, 6, 1, &day06);
+    bench_part(c, 6, 2, &day06);
 }
 
 criterion_group!(benches, benchmark_days);
